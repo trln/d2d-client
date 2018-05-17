@@ -33,7 +33,7 @@ application such as Rails, we have further broken out a separate
 `D2D::Client::Configuration` class and provided a way to initialize a template
 configuration to be used as needed to create new `Session` objects.  Here is a smple usage:
 
-```
+```ruby
 # in config/initializers/d2d_client.rb
 
 require 'd2d/client'
@@ -53,7 +53,7 @@ result = d2d_session.find_item(isbn: 'foo')
 # is the patron able to request the item with the supplied ISBN from a 
 # TRLN library *other than their own?* 
 
-render :ill_not_available result.availalbe
+render :ill_not_available unless result.availalbe
 ```
 
 ## Development
