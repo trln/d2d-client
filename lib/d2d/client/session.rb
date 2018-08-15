@@ -4,6 +4,8 @@ module D2D
     # Typically one will be instantiated on behalf of a patron,
     # based on a Configuration that has already been created with
     class Session
+      attr_accessor :client
+
       attr_reader :patron
 
       # Makes a request to authenicate the current patron.
@@ -29,6 +31,13 @@ module D2D
       # @see D2D::Client:FindItem
       def find_item(params = {})
         req = FindItem.new(base_options.merge(params))
+        res = make_request(req)
+        yield res if block_given?
+        res
+      end
+
+      def request_item(params = {})
+        req = RequestItem.new(base_options.merge(params))
         res = make_request(req)
         yield res if block_given?
         res
@@ -60,6 +69,7 @@ module D2D
                   else
                     config.update(options)
                   end
+        @client = options[:client] if options[:client]
         @patron = authenticate
       end
 

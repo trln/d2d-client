@@ -13,14 +13,74 @@ module D2D
       end
     end
 
-    # Encapsulates a "FindItem" request
-    class FindItem
+    module SearchRequest
       include Request
-      PATH = '/dws/item/available'.freeze
-
       EXACT_TERMS = %i[isbn issn lccn oclc].freeze
 
       FILTER_FIELDS = %i[pubdate format].freeze
+
+      def search_options(options)
+        if exact_search?(options)
+          prepare_exact_search(options)
+        else
+          prepare_bib_search(options)
+        end
+      end
+
+      def exact_search?(options)
+        EXACT_TERMS.any? { |term| options.include? term }
+      end
+
+      def prepare_exact_search(options)
+        term = EXACT_TERMS.first { |t| options.include? t }
+        { ExactSearch:
+            arrayify(options[term]).map do |value|
+              { Type: term.to_s.upcase, Value: value }
+            end }
+      end
+
+      # Prepares a bibliogtraphic search
+      def prepare_bib_search(options)
+        return {} if exact_search?(options)
+        unless options[:title]
+          msg = 'ExactSearch not specified and :title not provided'
+          raise ArgumentError, msg
+        end
+        query = { Title: options[:title] }
+        query << { Author: arrayify(options[:author]) } if options[:author]
+        filters = create_filters(options)
+        query.update(ResultFilter: filters) unless filters.empty?
+        { BibSearch: query }
+      end
+
+      def create_filters(options)
+        filters = {}
+        filters[:Include] = build_filter(options[:include]) if options[:include]
+        filters[:Exclude] = build_filter(options[:exclude]) if options[:exclude]
+        filters
+      end
+
+      def build_filter(params)
+        Hash[
+          params.select { |f| FILTER_FIELDS.include?(f) }.map do |f, v|
+            if f == :pubdate
+              [:PublicationDate, arrayify(v)]
+            elsif f == :format
+              [:Format, arrayify(v)]
+            end
+          end
+        ]
+      end
+
+      def arrayify(value)
+        value.respond_to?(:each) ? value.map(&:to_s) : [value.to_s]
+      end
+    end
+
+    # Encapsulates a "FindItem" request
+    class FindItem
+      include SearchRequest
+      PATH = '/dws/item/available'.freeze
 
       # Creates a FindItem request.  Typically this is invoked by an active
       # Session object.
@@ -54,11 +114,7 @@ module D2D
       # `false.`
       def initialize(options = {})
         req = init(options)
-        if exact_search?(options)
-          req.update(prepare_exact_search(options))
-        else
-          req.update(prepare_bib_search(options))
-        end
+        req.update(_search_options(options))
         @body = req
       end
 
@@ -90,42 +146,21 @@ module D2D
         query << { Author: arrayify(options[:author]) } if options[:author]
         filters = create_filters(options)
         query.update(ResultFilter: filters) unless filters.empty?
-        query
-      end
-
-      private
-
-      def create_filters(options)
-        filters = {}
-        filters[:Include] = build_filter(options[:include]) if options[:include]
-        filters[:Exclude] = build_filter(options[:exclude]) if options[:exclude]
-        filters
-      end
-
-      def build_filter(params)
-        Hash[
-          params.select { |f| FILTER_FIELDS.include?(f) }.map do |f, v|
-            if f == :pubdate
-              [:PublicationDate, arrayify(v)]
-            elsif f == :format
-              [:Format, arrayify(v)]
-            end
-          end
-        ]
-      end
-
-      def arrayify(value)
-        value.respond_to?(:each) ? value.map(&:to_s) : [value.to_s]
+        { BibSearch: query }
       end
     end
 
     # Request an Item.
     class RequestItem
-      include Request
+      include SearchRequest
       PATH = '/dws/item/add'.freeze
 
       def initialize(options = {})
-        @body = init(options)
+        req = init(options)
+        req.update(search_options(options))
+        req[:PickupLocation] = options[:pickup_location]
+        req[:Notes] = options[:note] if options[:note]
+        @body = req
       end
 
       def response

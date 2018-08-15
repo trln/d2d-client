@@ -1,0 +1,8 @@
+{
+	"RequestNumber" : "__request_number__",
+	"RequestLink" : {
+		"ButtonLink" : "__button_link__",
+		"ButtonLabel" : "__button_label__",
+		"RequestMessage" : "__request_message__"
+	}
+}
