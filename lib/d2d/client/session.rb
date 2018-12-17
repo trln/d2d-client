@@ -4,7 +4,7 @@ module D2D
     # Typically one will be instantiated on behalf of a patron,
     # based on a Configuration that has already been created with
     class Session
-      attr_accessor :client
+      attr_writer :client
 
       attr_reader :patron
 
@@ -94,8 +94,7 @@ module D2D
           req.headers['Content-Type'] = 'application/json'
           req.body = body.respond_to?(:each) ? body.to_json : body
         end
-        return request.response.new(JSON.parse(resp.body)) if resp.status == 200
-        raise "Request failed: #{resp.reason_phrase} : #{resp.body}"
+        request.response.new(JSON.parse(resp.body))
       end
       # rubocop:enable AbcSize
 
