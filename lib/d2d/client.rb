@@ -24,11 +24,12 @@ module D2D
     #   session. This parameter is optional when using #configure
     class Configuration
       # all supported attributes
-      ATTRS = %i[base_url
-                 partnership_id
-                 api_key
-                 library_symbol
-                 patron_id
+      ATTRS = %i[
+        base_url
+        partnership_id
+        api_key
+        library_symbol
+        patron_id
       ].freeze
 
       # supported attributes that are not required for a base configuration
@@ -74,6 +75,8 @@ module D2D
           library_symbol: library_symbol,
           patron_id: patron_id
         }
+        # always return a copy
+        Marshal.load(Marshal.dump(@to_h))
       end
 
       def find_missing

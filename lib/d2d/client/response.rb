@@ -4,12 +4,15 @@ module D2D
     module Response
       attr_reader :data
 
+      # Check whether the response indicates a problem
       def problem?
-        data.key?('Problem')
+        data.nil? || data.key?('Problem')
       end
 
       def error_message
         problem? ? data['Problem']['ErrorMessage'] : ''
+      rescue StandardError
+        'unknown error'
       end
 
       def camel_casify(key)
@@ -110,6 +113,7 @@ module D2D
       attr_reader(*ATTRS)
 
       def initialize(data)
+        @data = data
         @available = data['Available'] || false
         @search_term = data['SearchTerm'] || '[unknown]'
         @num_records = data['OrigNumberOfRecords'] || 0
@@ -135,6 +139,7 @@ module D2D
       attr_reader :available, :request_number, :request_message, :request_link
 
       def initialize(data)
+        @data = data
         @request_number = data['RequestNumber'] || '[unknown]'
         @request_messsage = data['RequestMessage'] || ''
         @request_link = Hash[data.fetch('RequestLink', {}).map do |k, v|

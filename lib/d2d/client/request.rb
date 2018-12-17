@@ -15,7 +15,7 @@ module D2D
 
     module SearchRequest
       include Request
-      EXACT_TERMS = %i[isbn issn lccn oclc].freeze
+      EXACT_TERMS = %i[isbn oclc issn lccn].freeze
 
       FILTER_FIELDS = %i[pubdate format].freeze
 
@@ -32,7 +32,7 @@ module D2D
       end
 
       def prepare_exact_search(options)
-        term = EXACT_TERMS.first { |t| options.include? t }
+        term = EXACT_TERMS.find { |t| options.include? t }
         { ExactSearch:
             arrayify(options[term]).map do |value|
               { Type: term.to_s.upcase, Value: value }
@@ -42,6 +42,7 @@ module D2D
       # Prepares a bibliogtraphic search
       def prepare_bib_search(options)
         return {} if exact_search?(options)
+
         unless options[:title]
           msg = 'ExactSearch not specified and :title not provided'
           raise ArgumentError, msg
@@ -114,7 +115,7 @@ module D2D
       # `false.`
       def initialize(options = {})
         req = init(options)
-        req.update(_search_options(options))
+        req.update(search_options(options))
         @body = req
       end
 
@@ -128,7 +129,7 @@ module D2D
       end
 
       def prepare_exact_search(options)
-        term = EXACT_TERMS.first { |t| options.include? t }
+        term = EXACT_TERMS.find { |t| options.include? t }
         { ExactSearch:
             arrayify(options[term]).map do |value|
               { Type: term.to_s.upcase, Value: value }
