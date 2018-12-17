@@ -17,7 +17,14 @@ And then execute:
 
 Or install it yourself as:
 
-    $ rake install
+    $ bundle exec rake install
+
+To run tests:
+
+    $ bundle exec rspec
+
+Note that, because this repository is private, you may have to log in to
+`github.com` in order to pull it into your project.
 
 ## Usage
 
@@ -55,6 +62,21 @@ result = d2d_session.find_item(isbn: 'foo')
 
 render :ill_not_available unless result.availalbe
 ```
+All 'make request' methods on the `D2D::Client::Session` instances (`find_item` and `request_item` being the most prominent) accept a block, to which they yield the appropriate `D2D::Client::Response` instance.  All response objects support a `problem?` method, which echoes the `Problem` key that is returned by responses from the D2D API itself that indicate the request could not be
+completed.  In this case, usually the `error_message` method will return the
+error message. 
+
+## D2D API and TRLN Direct
+
+When providing parameters to a 'FindItem' or 'RequestItem' request, D2D appears
+to match records based on *all supplied parameters* interpreted as `AND`, so,
+e.g. if you specify more than one value for the `isbn` parameter, only records
+matching all of those ISBNs will be returned; if you specify both `:isbn` and
+`:oclc` parameters, it will match only records with both (all of the ISBNs) and
+(all of the OCLC numbers). 
+
+As of 2018-12-16, with TRLN Direct, the `:oclc` parameter does not appear to
+match at all.  Pending investigation, use `isbn:` exclusively.
 
 ## Development
 
