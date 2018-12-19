@@ -15,16 +15,14 @@ And then execute:
 
     $ bundle
 
-Or install it yourself as:
-
-    $ bundle exec rake install
-
 To run tests:
 
     $ bundle exec rspec
 
-Note that, because this repository is private, you may have to log in to
-`github.com` in order to pull it into your project.
+Or install it yourself as:
+
+    $ bundle exec rake install
+
 
 ## Usage
 
@@ -33,12 +31,12 @@ behalf of a patron.  After an initial 'authentication' request that establishes
 the patron's identity and permissions, subsequent requests use a temporary
 authorization ID.  This has been encapsulated in this gem as a
 `D2D::Client::Session` object, which can be used to make multiple requests on a
-patron's behalf.
+patron's behalf.  In the context of a Rails application, where objects in a Rails session may be serialized, you'll need to take some extra steps to serialize and deserialize the D2D session.
 
 Since one primary use case for this gem is within a long-running, multi-user
 application such as Rails, we have further broken out a separate
 `D2D::Client::Configuration` class and provided a way to initialize a template
-configuration to be used as needed to create new `Session` objects.  Here is a smple usage:
+configuration to be used as needed to create new `Session` objects.  Here is a sample usage:
 
 ```ruby
 # in config/initializers/d2d_client.rb

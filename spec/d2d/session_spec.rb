@@ -19,20 +19,52 @@ describe D2D::Client::Session do
     }
   end
 
+  let(:fake_patron) do
+    D2D::Client::Patron.new(
+      aid: 'not_authorized',
+      group: 'patrons',
+      library: 'NCSU',
+      lang_code: 'Hey',
+      first_name: 'Fake',
+      last_name: 'Patron',
+      type: 'Patron',
+      permission: []
+    )
+  end
+
   let(:request_item_session) do
     content = Helpers.hash_fill!(
       load_json('request_item_response'),
       request_item_response
     )
     fake_response = Helpers::MockResponse.new(content)
-    D2D::Client::Session.new(nil, client: Helpers::MockClient.new(fake_response))
+    D2D::Client::Session.new(
+      client: Helpers::MockClient.new(fake_response),
+      patron: fake_patron
+    )
   end
 
   context 'request_item' do
     it 'populates the AddItem body correctly' do
+      expect(request_item_session).not_to be_nil
       resp = request_item_session.request_item(title: 'Hey you', note: 'volume 1 please')
       expect(resp).to be_a(D2D::Client::RequestItemResponse)
       expect(resp.request_number).to eq(request_item_response[:request_number])
+    end
+  end
+
+  context 'serialization' do
+    it 'round trips sessions' do
+      orig_hash = request_item_session.to_h
+      serialized = request_item_session.to_json
+      expect(JSON.parse(serialized)).to eq(orig_hash)
+    end
+
+    it 'round trips patrons' do
+      orig_patron = request_item_session.patron
+      serialized = request_item_session.to_json
+      deserialized = D2D::Client::Session.from_json(JSON.parse(serialized))
+      expect(deserialized.patron.to_h).to eq(orig_patron.to_h)
     end
   end
 end
