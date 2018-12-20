@@ -53,6 +53,7 @@ module D2D
 
         req = D2D::Client::Authentication.new(@config.to_h)
         resp = make_request(req)
+        warn("d2d reponse error: #{resp.error_message}") if resp.error_message
         raise(StandardError, resp.error_message) if resp.problem?
 
         resp.patron
@@ -124,6 +125,7 @@ module D2D
           req.headers['Content-Type'] = 'application/json'
           req.body = body.respond_to?(:each) ? body.to_json : body
         end
+        warn(resp.body)
         request.response.new(JSON.parse(resp.body))
       end
 

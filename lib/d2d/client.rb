@@ -90,7 +90,7 @@ module D2D
     # The default configuration.
     # @see D2D::Client::Session
     def self.configuration
-      @configuration ||= Configuration.new
+      (@configuration ||= Configuration.new) .dup
     end
 
     # Create a base configuration that willbbe used as the default
