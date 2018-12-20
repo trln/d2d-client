@@ -15,6 +15,8 @@ module D2D
 
       attr_reader :patron
 
+      attr_accessor :logger
+
       # Creates a new instance of this class from JSON data created
       # by `instance.to_json`
       # @param json_data [Hash|String] the serialized data representing
@@ -51,15 +53,16 @@ module D2D
       def authenticate
         return @patron if @patron
 
+        anon = @config.patron_id.gsub(/.(?=\d{4})/, '#')
         req = D2D::Client::Authentication.new(@config.to_h)
         begin
           resp = make_request(req)
         rescue StandardError => e
-          @logger.warn("Unable to complete authentication request, #{e}")
+          @logger.warn("Unable to complete authentication request for patron #{anon}: #{e}")
           raise e
         end
-        anon = @config.patron_id.gsub(/.(?=\d{4})/, '#')
-        @logger.warn("Unable to create D2D session for #{anon}: #{resp.error_messag || '(unknown)'}")
+
+        @logger.warn("Unable to create D2D session for #{anon}: #{resp.error_message || '(unknown)'}")
         raise(StandardError, resp.error_message) if resp.problem?
 
         resp.patron
