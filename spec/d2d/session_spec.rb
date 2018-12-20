@@ -1,3 +1,5 @@
+require 'logger'
+
 describe D2D::Client::Session do
   include D2D::Client
   before do
@@ -67,6 +69,29 @@ describe D2D::Client::Session do
       serialized = request_item_session.to_json
       deserialized = D2D::Client::Session.from_json(JSON.parse(serialized))
       expect(deserialized.patron.to_h).to eq(orig_patron.to_h)
+    end
+  end
+
+  context 'logger' do
+    it 'populates the logger' do
+      # we expect an error, because nothing should
+      # be listening on localhost.  But we also want to be sure
+      # that if we provide our own logger during configuration,
+      # that it's the one that gets used.
+      log_output = capture_stdout do
+        D2D::Client.configure do |config|
+          config.library_symbol = 'TRLN'
+          config.partnership_id = 'TRLN'
+          config.base_url = 'http://localhost:1231/api'
+          config.api_key = 'richard moranis'
+          config.patron_id = '123456789'
+          config.logger = Logger.new($stdout)
+        end
+        expect do
+          D2D::Client::Session.new(patron_id: 'bucky')
+        end.to raise_error(StandardError)
+      end
+      expect(log_output).to match(/Connection refused/)
     end
   end
 end

@@ -52,14 +52,20 @@ module D2D
         return @patron if @patron
 
         req = D2D::Client::Authentication.new(@config.to_h)
-        resp = make_request(req)
-        warn("d2d reponse error: #{resp.error_message}") if resp.error_message
+        begin
+          resp = make_request(req)
+        rescue StandardError => e
+          @logger.warn("Unable to complete authentication request, #{e}")
+          raise e
+        end
+        anon = @config.patron_id.gsub(/.(?=\d{4})/, '#')
+        @logger.warn("Unable to create D2D session for #{anon}: #{resp.error_messag || '(unknown)'}")
         raise(StandardError, resp.error_message) if resp.problem?
 
         resp.patron
       end
 
-      # extract base options from configuration and patron 
+      # extract base options from configuration and patron
       def base_options
         aid = @patron && @patron.aid
         keepers = %i[library_symbol partnership_id]
@@ -96,11 +102,18 @@ module D2D
       # @option options [Hash] :patron a hash representing a `D2D::Client::Patron`
       # instance that has perviously been authenticated.  Usually used when
       # deserializing an instance of this class that was previously serialized.
+      #
+      # A Note about logging: if the configuration contains a logger, that's
+      # what will be used to log details from operations of this class.
+      # If running inside the Rails environment, the Rails.logger will be used.
+      # Otherwise, a standard Logger to `$stderr` set at `FATAL` level is
+      # what will be used.
       # @see D2D::Client
       # @see D2D::Client::Patron
       def initialize(options = {})
         config = options.fetch(:config, D2D::Client.configuration)
         @config = config.update(options)
+        @logger = find_logger(config)
         @patron = options[:patron] || authenticate
         @client = options[:client] if options[:client]
       end
@@ -125,11 +138,27 @@ module D2D
           req.headers['Content-Type'] = 'application/json'
           req.body = body.respond_to?(:each) ? body.to_json : body
         end
-        warn(resp.body)
+        @logger.debug(resp.body)
         request.response.new(JSON.parse(resp.body))
       end
 
       private
+
+      # Looks up the appropriate logger.  In order of preference
+      # 1. logger from configuration (if present)
+      # 2. `Rails.logger if defined? Rails`
+      # 3. New Logger($stderr, FATAL)
+      def find_logger(config)
+        if config.logger
+          config.logger
+        elsif defined? Rails
+          Rails.logger
+        else
+          logger = Logger.new($stderr)
+          logger.level = Logger::FATAL
+          logger
+        end
+      end
 
       # simple client open
       def build_client

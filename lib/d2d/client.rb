@@ -2,9 +2,11 @@ require 'd2d/client/version'
 require 'd2d/client/session'
 require 'd2d/client/response'
 require 'd2d/client/request'
+require 'd2d/client/null_logger'
 
 require 'json'
 require 'faraday'
+require 'logger'
 
 module D2D
   # Relais D2D Client
@@ -30,10 +32,11 @@ module D2D
         api_key
         library_symbol
         patron_id
+        logger
       ].freeze
 
       # supported attributes that are not required for a base configuration
-      OPTIONAL_ATTRS = %i[patron_id].freeze
+      OPTIONAL_ATTRS = %i[patron_id logger].freeze
 
       attr_accessor(*ATTRS)
 
