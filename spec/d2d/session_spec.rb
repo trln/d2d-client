@@ -62,6 +62,7 @@ describe D2D::Client::Session do
       expect(JSON.parse(serialized)).to eq(orig_hash)
       new_session = described_class.from_json(serialized)
       expect(new_session.to_h).to eq(orig_hash)
+      expect(new_session.patron).to be_a(D2D::Client::Patron)
     end
 
     it 'round trips patrons' do

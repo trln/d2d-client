@@ -9,6 +9,10 @@ module D2D
         data.nil? || data.key?('Problem')
       end
 
+      def session_invalid?
+        problem? && data['Problem']['ErrorCode'] == 'PUBFI003'
+      end
+
       def error_message
         problem? ? data['Problem']['ErrorMessage'] : ''
       rescue StandardError
@@ -158,6 +162,18 @@ module D2D
           [camel_casify(k), v]
         end]
         @pickup_locations = deserialize_pickup_locations(data)
+      end
+
+      # message in RequestLink data element, usually this will
+      # explain why available? is false
+      # return
+      def availability_message
+        @request_link['request_message']
+      end
+
+      # gets the deserialized response data
+      def response
+        @data
       end
 
       def deserialize_pickup_locations(data)

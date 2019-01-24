@@ -28,6 +28,7 @@ module D2D
         raise(StandardError, "Cannot deserialize session from #{json_data.class}") unless json_data.is_a?(Hash)
 
         options = Hash[json_data.map { |k, v| [k.to_sym, v] }]
+        options[:patron] = Patron.from_h(options[:patron]) if options[:patron]
         Session.new(options)
       end
 
@@ -50,8 +51,8 @@ module D2D
       #
       # This will be a no-op if the patron is already authenticated.
       # @see D2D::Client::Patron
-      def authenticate
-        return @patron if @patron
+      def authenticate!(force = false)
+        return @patron if @patron && !force
 
         anon = @config.patron_id.gsub(/.(?=\d{4})/, '#')
         req = D2D::Client::Authentication.new(@config.to_h)
@@ -65,7 +66,7 @@ module D2D
         @logger.warn("Unable to create D2D session for #{anon}: #{resp.error_message || '(unknown)'}")
         raise(StandardError, resp.error_message) if resp.problem?
 
-        resp.patron
+        @patron = resp.patron
       end
 
       # extract base options from configuration and patron
@@ -117,7 +118,7 @@ module D2D
         config = options.fetch(:config, D2D::Client.configuration)
         @config = config.update(options)
         @logger = find_logger(config)
-        @patron = options[:patron] || authenticate
+        @patron = options[:patron] || authenticate!(options.fetch(:reauth, false))
         @client = options[:client] if options[:client]
       end
 
