@@ -24,7 +24,7 @@ module D2D
       end
 
       def response
-        raise UnimplementedError, "#{self.class} needs to implement #{response}"
+        #fail NotImplementedError, "#{self.class} needs to implement #{response}"
       end
     end
 
@@ -164,6 +164,10 @@ module D2D
         @pickup_locations = deserialize_pickup_locations(data)
       end
 
+      def available?
+        @available
+      end
+
       # message in RequestLink data element, usually this will
       # explain why available? is false
       # return
@@ -172,7 +176,7 @@ module D2D
       end
 
       # gets the deserialized response data
-      def response
+      def raw_response
         @data
       end
 
@@ -198,6 +202,34 @@ module D2D
         @request_link = Hash[data.fetch('RequestLink', {}).map do |k, v|
           [camel_casify(k), v]
         end]
+      end
+    end
+
+    # Response to a "find request" query
+    class FindRequestsResponse
+      attr_reader :data, :requests
+
+      def initialize(data)
+        @data = data
+        @requests = parse
+      end
+
+      def parse_iso_date(isoval)
+        DateTime.strptime(isoval, '%Y%m%d%H%M%S')
+      end
+
+      def parse
+        requests = @data.fetch('MyRequestRecords', [])
+        requests.map do |r|
+          { id: r['RequestNumber'],
+            title: r['Title'],
+            author: r['Author'],
+            status: r['RequestStatus'],
+            date_created: parse_iso_date(r['ISO8601DateSubmitted']),
+            status_date: parse_iso_date(r['ISO8601RequestStatusDate']),
+            exception_desc: r['ExceptionCodeDesc']
+          }
+        end
       end
     end
   end

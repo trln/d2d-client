@@ -75,7 +75,7 @@ module D2D
         keepers = %i[library_symbol partnership_id]
         # .slice is available in 2.5, but ...
         @config.to_h.select { |k, _| keepers.include?(k) }
-               .merge(aid: aid)
+               .merge(aid: aid).dup
       end
 
       # Executes a FindItem for the current user based on the current set of
@@ -94,6 +94,14 @@ module D2D
         yield res if block_given?
         res
       end
+
+      def find_requests(params = {})
+        req = FindRequests.new(base_options.merge(params))
+        res = make_request(req)
+        yield res if block_given?
+        res
+      end
+
 
       # Creates a new session, using configuration options
       # @param [Hash] options the options to create the session with
@@ -137,11 +145,18 @@ module D2D
       # @param [Request] request to be executed.
       def make_request(request)
         body = request.body
-        resp = client.post do |req|
-          req.url request.path
-          req.headers['Content-Type'] = 'application/json'
-          req.body = body.respond_to?(:each) ? body.to_json : body
-        end
+        resp = if body.empty?
+                 client.get do |req|
+                   req.url request.path
+                   req.headers['Content-Type'] = 'application/json'
+                 end
+               else
+                 client.post do |req|
+                   req.url request.path
+                   req.headers['Content-Type'] = 'application/json'
+                   req.body = body.respond_to?(:each) ? body.to_json : body
+                 end
+               end
         @logger.debug(resp.body)
         request.response.new(JSON.parse(resp.body))
       end

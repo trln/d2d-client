@@ -7,6 +7,7 @@ require 'd2d/client/null_logger'
 require 'json'
 require 'faraday'
 require 'logger'
+require 'date'
 
 module D2D
   # Relais D2D Client
