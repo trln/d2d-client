@@ -24,6 +24,4 @@ RSpec.describe D2D::Client do
       end
     end).to raise_error(ArgumentError)
   end
-
-  
 end

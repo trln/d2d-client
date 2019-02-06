@@ -9,6 +9,10 @@ module D2D
         data.nil? || data.key?('Problem')
       end
 
+      def session_invalid?
+        problem? && data['Problem']['ErrorCode'] == 'PUBFI003'
+      end
+
       def error_message
         problem? ? data['Problem']['ErrorMessage'] : ''
       rescue StandardError
@@ -20,7 +24,7 @@ module D2D
       end
 
       def response
-        raise UnimplementedError, "#{self.class} needs to implement #{response}"
+        #fail NotImplementedError, "#{self.class} needs to implement #{response}"
       end
     end
 
@@ -33,13 +37,29 @@ module D2D
         @copy_request = copy
         @delivery_selection_change = deliv
       end
+
+      def self.from_h(hash)
+        Permissions.new(
+          hash.fetch('add_loan', false),
+          hash.fetch('copy_request', false),
+          hash.fetch('delivery_selection_change', false)
+        )
+      end
+
+      def to_h
+        { 'add_loan' => @add_loan,
+          'copy_request' => @copy_request,
+          'delivery_selection_change' => @delivery_selection_change
+        }
+      end
     end
 
     # Encapsulates information about a patron, which is most of what's in the
     # response to an Authentication request
     class Patron
       ATTRS = %i[
-        aid group
+        aid
+        group
         library
         lang_code
         first_name
@@ -51,14 +71,35 @@ module D2D
 
       def initialize(options = {})
         options.each do |k, v|
-          instance_variable_set("@#{k}", v)
+          instance_variable_set("@#{k.to_sym}", v)
         end
+      end
+
+      # Creates a Patron object from a hash of the sort
+      # created by patron.to_h
+      def self.from_h(hash)
+        patron = Patron.new(hash)
+        perms = hash.fetch('permissions', {})
+        patron.instance_variable_set('@permissions', Permissions.from_h(perms))
+        patron
+      end
+
+      # Converts this instance to a hash in preparation
+      # for serialization
+      def to_h
+        Hash[ATTRS.map do |attr|
+          if attr.to_s == 'permission'
+            [attr.to_s, permission.to_h]
+          else
+            [attr.to_s, instance_variable_get("@#{attr}")]
+          end
+        end]
       end
 
       # Initalizes a patron object from deserialized JSON response
       # to Authentication request
       # rubocop:disable MethodLength
-      def self.from_json(data)
+      def self.from_d2d_json(data)
         Patron.new(
           aid: data['AuthorizationId'],
           group: data['UserGroup'],
@@ -89,7 +130,7 @@ module D2D
         end
         @aid = data['AuthorizationId'] || ''
         @library_symbol = data['LibrarySymbol'] || ''
-        @patron = Patron.from_json(data)
+        @patron = Patron.from_d2d_json(data)
         @user_group = data['UserGroup'] || ''
       end
     end
@@ -123,6 +164,22 @@ module D2D
         @pickup_locations = deserialize_pickup_locations(data)
       end
 
+      def available?
+        @available
+      end
+
+      # message in RequestLink data element, usually this will
+      # explain why available? is false
+      # return
+      def availability_message
+        @request_link['request_message']
+      end
+
+      # gets the deserialized response data
+      def raw_response
+        @data
+      end
+
       def deserialize_pickup_locations(data)
         data.fetch('PickupLocation', []).map do |l|
           {
@@ -145,6 +202,34 @@ module D2D
         @request_link = Hash[data.fetch('RequestLink', {}).map do |k, v|
           [camel_casify(k), v]
         end]
+      end
+    end
+
+    # Response to a "find request" query
+    class FindRequestsResponse
+      attr_reader :data, :requests
+
+      def initialize(data)
+        @data = data
+        @requests = parse
+      end
+
+      def parse_iso_date(isoval)
+        DateTime.strptime(isoval, '%Y%m%d%H%M%S')
+      end
+
+      def parse
+        requests = @data.fetch('MyRequestRecords', [])
+        requests.map do |r|
+          { id: r['RequestNumber'],
+            title: r['Title'],
+            author: r['Author'],
+            status: r['RequestStatus'],
+            date_created: parse_iso_date(r['ISO8601DateSubmitted']),
+            status_date: parse_iso_date(r['ISO8601RequestStatusDate']),
+            exception_desc: r['ExceptionCodeDesc']
+          }
+        end
       end
     end
   end

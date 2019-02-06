@@ -169,6 +169,42 @@ module D2D
       end
     end
 
+    # Request to return request statuses
+    class FindRequests
+      include Request
+      PATH = '/portal-service/request/query/my'.freeze
+
+      TYPES = %i[open xdays all allposttoweb unopenedposttoweb onloan].freeze
+
+      def init(params = {})
+        @path = self.class::PATH
+        @path += "/#{params[:request_id]}" if params[:request_id]
+        @params = { aid: params[:aid] }
+        if params[:type]
+          if TYPES.include?(params[:type].to_sym)
+            @params[:type] = params[:type]
+          else
+            raise StandardError, "D2D API does not recognize type='#{params[:type] }'"
+          end
+        end
+        @params[:xdays] = params[:xdays] if params[:xdays]
+        @path += '?' + URI.encode_www_form(@params)
+        @body = ''
+      end
+
+      def initialize(options = {})
+        @type = options.fetch(:type, 'open')
+        if @type == 'xdays'
+          @xdays = options.fetch(:xdays, 7)
+        end
+        init(options)
+      end
+
+      def response
+        FindRequestsResponse
+      end
+    end
+
     # An authentication request, make one of these at the beginning of a
     # session.
     class Authentication

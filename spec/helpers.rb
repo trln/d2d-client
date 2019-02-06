@@ -1,11 +1,32 @@
 require 'json'
+require 'stringio'
 
 module Helpers
+  def capture_stdout
+    prev_stdout = $stdout
+    $stdout = StringIO.new
+    yield
+    $stdout.string
+  ensure
+    $stdout = prev_stdout
+  end
+
+  def capture_stderr
+    prev_stderr = $stderr
+    $stderr = StringIO.new
+    yield
+    $stderr.string
+  ensure
+    $stderr = prev_stderr
+  end
+
   def load_data(path)
     filename = File.expand_path(File.join('data', path), __dir__)
     raise StandardError, "#{filename} not found in spec/data" unless File.file?(filename)
+
     File.open(filename) { |f| yield f } if block_given?
     return File.read(filename) unless block_given?
+
     filename
   end
 
