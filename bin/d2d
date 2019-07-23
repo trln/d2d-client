@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "d2d/client_handler"
+require "pry"
+
+# processor =
+# #   D2D::ClientHandler.new(file_name: "data_file.csv")
+#   D2D::ClientHandler.new()
+
+entered_ARGV = ARGV.length > 2;
+
+if entered_ARGV
+  entered_info = ARGV
+#   possible_cmd = "#{ARGV[0]} #{ARGV[1]}".downcase
+  possible_cmd = "#{ARGV[0]} #{ARGV[1]}".downcase
+  patron_id = ARGV[2]
+else
+  possible_cmd = 'help'
+end
+
+if ["get all", "get open", "get recent"].any? { |cmd| possible_cmd.include?(cmd) }
+  # entered info is passed to the ClientHandler
+  handler = D2D::ClientHandler.new(cmd: possible_cmd, patron_id: patron_id)
+  handler.response
+#   pry
+# elsif possible_cmd.include?("help")
+else
+  puts "you can use the commands 'get all', 'get open', or 'get recent' followed by a borrower id"
+end
