@@ -1,5 +1,7 @@
 module D2D
   module Client
-    VERSION = '0.2.1'.freeze
+    unless const_defined? :VERSION
+      VERSION = File.read("VERSION").strip.freeze
+    end
   end
 end
