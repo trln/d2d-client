@@ -88,9 +88,7 @@ describe D2D::Client::Session do
           config.patron_id = '123456789'
           config.logger = Logger.new($stdout)
         end
-        expect do
-          D2D::Client::Session.new(patron_id: 'bucky')
-        end.to raise_error(StandardError)
+        expect { D2D::Client::Session.new(patron_id: 'bucky') }.to raise_error(StandardError)
       end
       expect(log_output).to match(/Connection refused/)
     end
