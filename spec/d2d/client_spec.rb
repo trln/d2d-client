@@ -16,12 +16,12 @@ RSpec.describe D2D::Client do
   end
 
   it 'fails configuration when required parameters are left out' do
-    expect(lambda do
+    expect do
       D2D::Client.configure do |c|
         c.base_url = base_url
         c.api_key = api_key
         c.library_symbol = 'NCSU'
       end
-    end).to raise_error(ArgumentError)
+    end.to raise_error(ArgumentError)
   end
 end

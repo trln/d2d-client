@@ -2,7 +2,7 @@ RSpec.describe D2D::Client::Request do
   include described_class
 
   context 'RequestItem' do
-    it 'constructor with title searc' do
+    it 'executes constructor with title search' do
       options ={ title: 'hey you', pickup_location: 'DHHILL' }
       req = D2D::Client::RequestItem.new(options)
       expect(req.body[:BibSearch]).not_to be_nil
@@ -10,7 +10,7 @@ RSpec.describe D2D::Client::Request do
       expect(req.body[:ExactSearch]).to be_nil
     end
 
-    it 'constructor with isbn' do
+    it 'executes constructor with isbn' do
       options = { isbn: '978123456789X', pickup_location: 'HUNT' }
       req = D2D::Client::RequestItem.new(options)
       bib = req.body[:BibSearch]
